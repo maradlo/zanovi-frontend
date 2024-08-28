@@ -28,7 +28,7 @@ const Footer = () => {
         <div>
           <p className="text-xl font-medium mb-5">SPOJTE SA S NAMI</p>
           <ul className="flex flex-col gap-1 text-gray-600">
-            <li>+421 919 919 919</li>
+            <li>+421 902 226 357</li>
             <li>zanovi@zanovi.sk</li>
           </ul>
         </div>

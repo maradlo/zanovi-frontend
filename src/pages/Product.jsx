@@ -53,14 +53,6 @@ const Product = () => {
         </div>
         <div className="flex-1">
           <h1 className="font-medium text-2xl mt-2">{productData.name}</h1>
-          {/* <div className="flex items-center gap-1 mt-2">
-            <img src={assets.star_icon} alt="" className="w-3.5" />
-            <img src={assets.star_icon} alt="" className="w-3.5" />
-            <img src={assets.star_icon} alt="" className="w-3.5" />
-            <img src={assets.star_icon} alt="" className="w-3.5" />
-            <img src={assets.star_dull_icon} alt="" className="w-3.5" />
-            <p className="pl-2">(122)</p>
-          </div> */}
           <p className="mt-5 text-3xl font-medium">
             {currency}
             {productData.price}
@@ -88,9 +80,24 @@ const Product = () => {
               )}
             </div>
           </div>
+          <div className="mt-5">
+            <p className="font-bold">Dostupnosť:</p>
+            {productData.new && (
+              <p>
+                Nové - Na predajni: {productData.quantityInStore} ks, V sklade:{" "}
+                {productData.quantityInStock} ks
+              </p>
+            )}
+            {productData.used && (
+              <p>
+                Použité - Na predajni: {productData.quantityUsedInStore} ks, V
+                sklade: {productData.quantityUsedInStock} ks
+              </p>
+            )}
+          </div>
           <button
             onClick={() => addToCart(productData._id, color)}
-            className="bg-black text-white px-8 py-3 text-sm active:bg-gray-700"
+            className="bg-black text-white px-8 py-3 text-sm active:bg-gray-700 mt-5"
           >
             PRIDAŤ DO KOŠÍKA
           </button>
@@ -98,7 +105,7 @@ const Product = () => {
           <div className="text-sm text-gray-500 mt-5 flex flex-col gap-1">
             <p>100% originálny výrobok.</p>
             <p>Tento produkt je k dispozícii na dobierku.</p>
-            <p>Jednoduché vrátenie a výmena tovaru do 7 dní.</p>
+            <p>Jednoduché vrátenie a výmena tovaru do 14 dní.</p>
           </div>
         </div>
       </div>
@@ -107,7 +114,11 @@ const Product = () => {
           <b className="border px-5 py-3 text-sm">Popis produktu</b>
         </div>
         <div className="flex flex-col gap-4 border px-6 py-6 text-sm text-gray-500">
-          <p>{productData.description}</p>
+          <p>
+            {productData.description2
+              ? productData.description2
+              : "Ďalší popis nie je k dispozícii"}
+          </p>
         </div>
       </div>
       <RelatedProducts

@@ -22,7 +22,7 @@ const Contact = () => {
             Nitra <br /> Promenáda, SK
           </p>
           <p className=" text-gray-500">
-            Tel: +421 949 949 949 <br /> Email: zanovi@zanovi.sk
+            Tel: +421 902 226 357 <br /> Email: zanovi@zanovi.sk
           </p>
           <p className="font-semibold text-xl text-gray-600">
             Kariéra v Zanovi
