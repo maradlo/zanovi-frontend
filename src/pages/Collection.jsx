@@ -8,28 +8,72 @@ const Collection = () => {
   const { products, search, showSearch } = useContext(ShopContext);
   const [showFilter, setShowFilter] = useState(false);
   const [filterProducts, setFilterProducts] = useState([]);
-  const [category, setCategory] = useState([]);
-  const [subCategory, setSubCategory] = useState([]);
-  const [sortType, setSortType] = useState("relavent");
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [sortType, setSortType] = useState("relevant");
+
+  // Extract categories and subcategories from products
+  const extractCategories = () => {
+    const categorySet = new Set();
+    const subCategorySet = new Set();
+
+    products.forEach((product) => {
+      categorySet.add(product.category);
+      if (product.subCategory) {
+        subCategorySet.add(product.subCategory);
+      }
+    });
+
+    setCategories(Array.from(categorySet));
+    setSubCategories(Array.from(subCategorySet));
+  };
 
   const toggleCategory = (e) => {
-    if (category.includes(e.target.value)) {
-      setCategory((prev) => prev.filter((item) => item !== e.target.value));
+    if (selectedCategories.includes(e.target.value)) {
+      setSelectedCategories((prev) =>
+        prev.filter((item) => item !== e.target.value)
+      );
     } else {
-      setCategory((prev) => [...prev, e.target.value]);
+      setSelectedCategories((prev) => [...prev, e.target.value]);
     }
   };
 
   const toggleSubCategory = (e) => {
-    if (subCategory.includes(e.target.value)) {
-      setSubCategory((prev) => prev.filter((item) => item !== e.target.value));
+    if (selectedSubCategories.includes(e.target.value)) {
+      setSelectedSubCategories((prev) =>
+        prev.filter((item) => item !== e.target.value)
+      );
     } else {
-      setSubCategory((prev) => [...prev, e.target.value]);
+      setSelectedSubCategories((prev) => [...prev, e.target.value]);
     }
   };
 
   const applyFilter = () => {
-    let productsCopy = products.slice();
+    let productsCopy = products.map((product) => {
+      const { warehouse, ...restProduct } = product;
+
+      let price = 0;
+      let condition = "";
+
+      if (warehouse) {
+        // Prioritize used price if available, otherwise take the new price
+        if (warehouse.price.used > 0) {
+          price = warehouse.price.used;
+          condition = "used";
+        } else if (warehouse.price.new > 0) {
+          price = warehouse.price.new;
+          condition = "new";
+        }
+      }
+
+      return {
+        ...restProduct,
+        price,
+        condition,
+      };
+    });
 
     if (showSearch && search) {
       productsCopy = productsCopy.filter((item) =>
@@ -37,15 +81,15 @@ const Collection = () => {
       );
     }
 
-    if (category.length > 0) {
+    if (selectedCategories.length > 0) {
       productsCopy = productsCopy.filter((item) =>
-        category.includes(item.category)
+        selectedCategories.includes(item.category)
       );
     }
 
-    if (subCategory.length > 0) {
+    if (selectedSubCategories.length > 0) {
       productsCopy = productsCopy.filter((item) =>
-        subCategory.includes(item.subCategory)
+        selectedSubCategories.includes(item.subCategory)
       );
     }
 
@@ -71,8 +115,12 @@ const Collection = () => {
   };
 
   useEffect(() => {
+    extractCategories();
+  }, [products]);
+
+  useEffect(() => {
     applyFilter();
-  }, [category, subCategory, search, showSearch, products]);
+  }, [selectedCategories, selectedSubCategories, search, showSearch, products]);
 
   useEffect(() => {
     sortProduct();
@@ -101,33 +149,17 @@ const Collection = () => {
         >
           <p className="mb-3 text-sm font-medium">KATEGÓRIE</p>
           <div className="flex flex-col gap-2 text-sm font-light text-gray-700">
-            <p className="flex gap-2">
-              <input
-                className="w-3"
-                type="checkbox"
-                value={"Men"}
-                onChange={toggleCategory}
-              />{" "}
-              Herné konzole
-            </p>
-            <p className="flex gap-2">
-              <input
-                className="w-3"
-                type="checkbox"
-                value={"Women"}
-                onChange={toggleCategory}
-              />{" "}
-              Herné príslušenstvo
-            </p>
-            <p className="flex gap-2">
-              <input
-                className="w-3"
-                type="checkbox"
-                value={"Kids"}
-                onChange={toggleCategory}
-              />{" "}
-              Hry
-            </p>
+            {categories.map((category, index) => (
+              <p className="flex gap-2" key={index}>
+                <input
+                  className="w-3"
+                  type="checkbox"
+                  value={category}
+                  onChange={toggleCategory}
+                />{" "}
+                {category}
+              </p>
+            ))}
           </div>
         </div>
         {/* SubCategory Filter */}
@@ -136,35 +168,19 @@ const Collection = () => {
             showFilter ? "" : "hidden"
           } sm:block`}
         >
-          <p className="mb-3 text-sm font-medium">TYPE</p>
+          <p className="mb-3 text-sm font-medium">PODKATEGÓRIE</p>
           <div className="flex flex-col gap-2 text-sm font-light text-gray-700">
-            <p className="flex gap-2">
-              <input
-                className="w-3"
-                type="checkbox"
-                value={"Topwear"}
-                onChange={toggleSubCategory}
-              />{" "}
-              Playstation 5
-            </p>
-            <p className="flex gap-2">
-              <input
-                className="w-3"
-                type="checkbox"
-                value={"Bottomwear"}
-                onChange={toggleSubCategory}
-              />{" "}
-              XBOX Series X
-            </p>
-            <p className="flex gap-2">
-              <input
-                className="w-3"
-                type="checkbox"
-                value={"Winterwear"}
-                onChange={toggleSubCategory}
-              />{" "}
-              Dualsense Edge
-            </p>
+            {subCategories.map((subCategory, index) => (
+              <p className="flex gap-2" key={index}>
+                <input
+                  className="w-3"
+                  type="checkbox"
+                  value={subCategory}
+                  onChange={toggleSubCategory}
+                />{" "}
+                {subCategory}
+              </p>
+            ))}
           </div>
         </div>
       </div>
@@ -173,12 +189,12 @@ const Collection = () => {
       <div className="flex-1">
         <div className="flex justify-between text-base sm:text-2xl mb-4">
           <Title text1={"VŠETKY"} text2={"PRODUKTY"} />
-          {/* Porduct Sort */}
+          {/* Product Sort */}
           <select
             onChange={(e) => setSortType(e.target.value)}
             className="border-2 border-gray-300 text-sm px-2"
           >
-            <option value="relavent">Zoradiť podľa: Odporúčané</option>
+            <option value="relevant">Zoradiť podľa: Odporúčané</option>
             <option value="low-high">
               Zoradiť podľa ceny: Od najlacnejšieho
             </option>
@@ -197,6 +213,7 @@ const Collection = () => {
               id={item._id}
               price={item.price}
               image={item.image}
+              condition={item.condition} // Pass the condition as well
             />
           ))}
         </div>

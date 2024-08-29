@@ -16,31 +16,67 @@ const ShopContextProvider = (props) => {
   const [token, setToken] = useState("");
   const navigate = useNavigate();
 
-  const addToCart = async (itemId, color) => {
-    if (!color) {
-      toast.error("Vyberte si farbu produktu");
+  // Load cart data from localStorage on app initialization
+  useEffect(() => {
+    const savedCartItems = localStorage.getItem("cartItems");
+    if (savedCartItems) {
+      setCartItems(JSON.parse(savedCartItems));
+    }
+
+    // Check for token in localStorage
+    if (!token && localStorage.getItem("token")) {
+      setToken(localStorage.getItem("token"));
+      getUserCart(localStorage.getItem("token"));
+    }
+    if (token) {
+      getUserCart(token);
+    }
+  }, [token]);
+
+  // Save cart data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  const addToCart = async (itemId, condition) => {
+    if (!condition) {
+      toast.error("Vyberte stav produktu");
       return;
     }
 
     let cartData = structuredClone(cartItems);
 
+    const product = products.find((product) => product._id === itemId);
+
+    if (!product) {
+      toast.error("Produkt neexistuje");
+      return;
+    }
+
+    // Determine the price based on the selected condition
+    const price =
+      condition === "new"
+        ? product.warehouse.price.new
+        : product.warehouse.price.used;
+
     if (cartData[itemId]) {
-      if (cartData[itemId][color]) {
-        cartData[itemId][color] += 1;
+      if (cartData[itemId][condition]) {
+        cartData[itemId][condition].quantity += 1;
       } else {
-        cartData[itemId][color] = 1;
+        cartData[itemId][condition] = { quantity: 1, price };
       }
     } else {
       cartData[itemId] = {};
-      cartData[itemId][color] = 1;
+      cartData[itemId][condition] = { quantity: 1, price };
     }
+
     setCartItems(cartData);
 
     if (token) {
       try {
         await axios.post(
           backendUrl + "/api/cart/add",
-          { itemId, color },
+          { itemId, condition },
           { headers: { token } }
         );
         toast.success("Produkt bol pridaný do košíka");
@@ -56,8 +92,8 @@ const ShopContextProvider = (props) => {
     for (const items in cartItems) {
       for (const item in cartItems[items]) {
         try {
-          if (cartItems[items][item] > 0) {
-            totalCount += cartItems[items][item];
+          if (cartItems[items][item].quantity > 0) {
+            totalCount += cartItems[items][item].quantity;
           }
         } catch (error) {}
       }
@@ -65,10 +101,17 @@ const ShopContextProvider = (props) => {
     return totalCount;
   };
 
-  const updateQuantity = async (itemId, size, quantity) => {
+  const updateQuantity = async (itemId, condition, quantity) => {
     let cartData = structuredClone(cartItems);
 
-    cartData[itemId][size] = quantity;
+    if (quantity === 0) {
+      delete cartData[itemId][condition];
+      if (Object.keys(cartData[itemId]).length === 0) {
+        delete cartData[itemId];
+      }
+    } else {
+      cartData[itemId][condition].quantity = quantity;
+    }
 
     setCartItems(cartData);
 
@@ -76,7 +119,7 @@ const ShopContextProvider = (props) => {
       try {
         await axios.post(
           backendUrl + "/api/cart/update",
-          { itemId, size, quantity },
+          { itemId, condition, quantity },
           { headers: { token } }
         );
       } catch (error) {
@@ -89,13 +132,15 @@ const ShopContextProvider = (props) => {
   const getCartAmount = () => {
     let totalAmount = 0;
     for (const items in cartItems) {
-      let itemInfo = products.find((product) => product._id === items);
-      for (const item in cartItems[items]) {
+      for (const condition in cartItems[items]) {
         try {
-          if (cartItems[items][item] > 0) {
-            totalAmount += itemInfo.price * cartItems[items][item];
+          const item = cartItems[items][condition];
+          if (item.quantity > 0) {
+            totalAmount += item.price * item.quantity;
           }
-        } catch (error) {}
+        } catch (error) {
+          console.log("Error calculating cart amount", error);
+        }
       }
     }
     return totalAmount;
@@ -134,16 +179,6 @@ const ShopContextProvider = (props) => {
   useEffect(() => {
     getProductsData();
   }, []);
-
-  useEffect(() => {
-    if (!token && localStorage.getItem("token")) {
-      setToken(localStorage.getItem("token"));
-      getUserCart(localStorage.getItem("token"));
-    }
-    if (token) {
-      getUserCart(token);
-    }
-  }, [token]);
 
   const value = {
     products,

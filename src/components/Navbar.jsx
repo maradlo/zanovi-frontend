@@ -37,6 +37,14 @@ const Navbar = () => {
           <p>PRODUKTY</p>
           <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
         </NavLink>
+        <NavLink to="/reservation" className="flex flex-col items-center gap-1">
+          <p>REZERVÁCIA</p>
+          <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
+        </NavLink>
+        <NavLink to="/buyback" className="flex flex-col items-center gap-1">
+          <p>VÝKUP</p>
+          <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
+        </NavLink>
         <NavLink to="/about" className="flex flex-col items-center gap-1">
           <p>O NÁS</p>
           <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />

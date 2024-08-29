@@ -24,7 +24,7 @@ const Contact = () => {
           <p className=" text-gray-500">
             Tel: +421 902 226 357 <br /> Email: zanovi@zanovi.sk
           </p>
-          <p className="font-semibold text-xl text-gray-600">
+          {/* <p className="font-semibold text-xl text-gray-600">
             Kariéra v Zanovi
           </p>
           <p className=" text-gray-500">
@@ -33,7 +33,7 @@ const Contact = () => {
           </p>
           <button className="border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500">
             Preskúmať pracovné miesta
-          </button>
+          </button> */}
         </div>
       </div>
 

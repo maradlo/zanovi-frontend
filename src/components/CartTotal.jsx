@@ -5,6 +5,12 @@ import Title from "./Title";
 const CartTotal = () => {
   const { currency, delivery_fee, getCartAmount } = useContext(ShopContext);
 
+  // Get the total cart amount including all conditions (new and used)
+  const cartSubtotal = getCartAmount();
+
+  // Calculate the total cost including the delivery fee
+  const totalCost = cartSubtotal + (cartSubtotal > 0 ? delivery_fee : 0);
+
   return (
     <div className="w-full">
       <div className="text-2xl">
@@ -15,22 +21,21 @@ const CartTotal = () => {
         <div className="flex justify-between">
           <p>Medzisúčet</p>
           <p>
-            {currency} {getCartAmount()}.00
+            {currency} {cartSubtotal.toFixed(2)}
           </p>
         </div>
         <hr />
         <div className="flex justify-between">
           <p>Poplatok za dopravu</p>
           <p>
-            {currency} {delivery_fee}
+            {currency} {delivery_fee.toFixed(2)}
           </p>
         </div>
         <hr />
         <div className="flex justify-between">
           <b>Celkovo</b>
           <b>
-            {currency}{" "}
-            {getCartAmount() === 0 ? 0 : getCartAmount() + delivery_fee}.00
+            {currency} {totalCost.toFixed(2)}
           </b>
         </div>
       </div>
