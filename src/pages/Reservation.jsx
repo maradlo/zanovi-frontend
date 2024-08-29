@@ -5,6 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const Reservations = () => {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [formData, setFormData] = useState({
     dateTime: "",
     duration: "",
@@ -25,7 +26,7 @@ const Reservations = () => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/reservations/add",
+        `${backendUrl}/api/reservations/add`,
         formData
       );
       if (response.data.success) {
