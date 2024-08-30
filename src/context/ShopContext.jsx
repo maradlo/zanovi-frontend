@@ -79,9 +79,9 @@ const ShopContextProvider = (props) => {
           { itemId, condition },
           { headers: { token } }
         );
+
         toast.success("Produkt bol pridaný do košíka");
       } catch (error) {
-        console.log(error);
         toast.error(error.message);
       }
     }
@@ -105,6 +105,12 @@ const ShopContextProvider = (props) => {
     let cartData = structuredClone(cartItems);
 
     if (quantity === 0) {
+      const confirmed = window.confirm(
+        "Naozaj chcete odstrániť tento produkt z košíka?"
+      );
+      if (!confirmed) {
+        return; // Exit the function if the user cancels the action
+      }
       delete cartData[itemId][condition];
       if (Object.keys(cartData[itemId]).length === 0) {
         delete cartData[itemId];
@@ -167,6 +173,7 @@ const ShopContextProvider = (props) => {
         {},
         { headers: { token } }
       );
+      console.log("response cart", response.data.cartData);
       if (response.data.success) {
         setCartItems(response.data.cartData);
       }

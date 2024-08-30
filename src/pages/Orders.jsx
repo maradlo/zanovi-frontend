@@ -35,9 +35,19 @@ const Orders = () => {
     } catch (error) {}
   };
 
+  const statusTranslations = {
+    "Order Placed": "Objednávka vytvorená",
+    Packing: "Balenie objednávky",
+    Shipped: "Odoslaná",
+    "Out for delivery": "Na doručenie",
+    Delivered: "Doručená",
+  };
+
   useEffect(() => {
     loadOrderData();
   }, [token]);
+
+  console.log(orderData);
 
   return (
     <div className="border-t pt-16">
@@ -57,28 +67,39 @@ const Orders = () => {
                 <p className="sm:text-base font-medium">{item.name}</p>
                 <div className="flex items-center gap-3 mt-1 text-base text-gray-700">
                   <p>
-                    {currency}
                     {item.price}
+                    {currency}
                   </p>
                   <p>Počet: {item.quantity}</p>
-                  <p>Veľkosť: {item.size}</p>
+                  <p>Stav: {item.condition === "used" ? "Použitý" : "Nový"}</p>
                 </div>
                 <p className="mt-1">
                   Dátum:{" "}
                   <span className=" text-gray-400">
-                    {new Date(item.date).toDateString()}
+                    {new Date(item.date).toLocaleDateString("sk-SK", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </span>
                 </p>
                 <p className="mt-1">
                   Platba:{" "}
-                  <span className=" text-gray-400">{item.paymentMethod}</span>
+                  <span className=" text-gray-400">
+                    {item.paymentMethod === "COD"
+                      ? "Dobierka"
+                      : item.paymentMethod}
+                  </span>
                 </p>
               </div>
             </div>
             <div className="md:w-1/2 flex justify-between">
               <div className="flex items-center gap-2">
                 <p className="min-w-2 h-2 rounded-full bg-green-500"></p>
-                <p className="text-sm md:text-base">{item.status}</p>
+                <p className="text-sm md:text-base">
+                  {statusTranslations[item.status] || item.status}
+                </p>
               </div>
               <button
                 onClick={loadOrderData}

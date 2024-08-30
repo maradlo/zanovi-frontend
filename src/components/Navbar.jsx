@@ -136,6 +136,20 @@ const Navbar = () => {
           <NavLink
             onClick={() => setVisible(false)}
             className="py-2 pl-6 border"
+            to="/reservation"
+          >
+            REZERVÁCIA
+          </NavLink>
+          <NavLink
+            onClick={() => setVisible(false)}
+            className="py-2 pl-6 border"
+            to="/buyback"
+          >
+            VÝKUP
+          </NavLink>
+          <NavLink
+            onClick={() => setVisible(false)}
+            className="py-2 pl-6 border"
             to="/about"
           >
             O NÁS
