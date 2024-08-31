@@ -32,7 +32,11 @@ const RelatedProducts = ({ category, subCategory }) => {
             key={index}
             id={item._id}
             name={item.name}
-            price={item.price}
+            price={
+              item.warehouse.price.used
+                ? item.warehouse.price.used
+                : item.warehouse.price.new
+            }
             image={item.image}
           />
         ))}

@@ -3,8 +3,8 @@ import { useParams } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { assets } from "../assets/assets";
 import RelatedProducts from "../components/RelatedProducts";
-import ReactMarkdown from "react-markdown"; // Import ReactMarkdown for Markdown rendering
-import remarkGfm from "remark-gfm"; // For GitHub Flavored Markdown (optional)
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const Product = () => {
   const { productId } = useParams();
@@ -19,7 +19,6 @@ const Product = () => {
       setProductData(product);
       setImage(product.image[0]);
 
-      // Set default condition selection based on availability
       if (product.warehouse) {
         if (product.warehouse.price.used > 0) {
           setSelectedCondition("used");
@@ -43,6 +42,17 @@ const Product = () => {
   const handleAddToCart = () => {
     addToCart(productData._id, selectedCondition);
   };
+
+  // Check availability
+  const isUsedAvailable =
+    productData?.warehouse?.quantityInStock?.used > 0 ||
+    productData?.warehouse?.quantityInStore?.used > 0;
+
+  const isNewAvailable =
+    productData?.warehouse?.quantityInStock?.new > 0 ||
+    productData?.warehouse?.quantityInStore?.new > 0;
+
+  const isAddToCartDisabled = !isUsedAvailable && !isNewAvailable;
 
   return productData && selectedCondition ? (
     <div className="border-t-2 pt-10 transition-opacity ease-in duration-500 opacity-100">
@@ -81,47 +91,51 @@ const Product = () => {
           </p>
           <div className="flex flex-col gap-4 my-8">
             <div className="flex gap-2">
-              {productData.warehouse.price.used > 0 && (
-                <button
-                  className={`border py-2 px-4 bg-gray-100 ${
-                    selectedCondition === "used" ? "border-orange-500" : ""
-                  }`}
-                  onClick={() => setSelectedCondition("used")}
-                >
-                  Použitý
-                </button>
-              )}
-              {productData.warehouse.price.new > 0 && (
-                <button
-                  className={`border py-2 px-4 bg-gray-100 ${
-                    selectedCondition === "new" ? "border-orange-500" : ""
-                  }`}
-                  onClick={() => setSelectedCondition("new")}
-                >
-                  Nový
-                </button>
-              )}
+              <button
+                className={`border py-2 px-4 ${
+                  selectedCondition === "used"
+                    ? "border-[#a7db28]"
+                    : "bg-gray-200 text-gray-500"
+                } ${!isUsedAvailable ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={() => setSelectedCondition("used")}
+                disabled={!isUsedAvailable}
+              >
+                Použitý
+              </button>
+              <button
+                className={`border py-2 px-4 ${
+                  selectedCondition === "new"
+                    ? "border-[#a7db28]"
+                    : "bg-gray-200 text-gray-500"
+                } ${!isNewAvailable ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={() => setSelectedCondition("new")}
+                disabled={!isNewAvailable}
+              >
+                Nový
+              </button>
             </div>
           </div>
           <div className="mt-5">
             <p className="font-bold">Dostupnosť:</p>
             {selectedCondition === "used" && (
               <p>
-                Použité - Na predajni:{" "}
-                {productData.warehouse.quantityInStore.used} ks, V sklade:{" "}
-                {productData.warehouse.quantityInStock.used} ks
+                Na predajni: {productData.warehouse.quantityInStore.used} ks, Na
+                sklade: {productData.warehouse.quantityInStock.used} ks
               </p>
             )}
             {selectedCondition === "new" && (
               <p>
-                Nové - Na predajni: {productData.warehouse.quantityInStore.new}{" "}
-                ks, V sklade: {productData.warehouse.quantityInStock.new} ks
+                Na predajni: {productData.warehouse.quantityInStore.new} ks, Na
+                sklade: {productData.warehouse.quantityInStock.new} ks
               </p>
             )}
           </div>
           <button
             onClick={handleAddToCart}
-            className="bg-black text-white px-8 py-3 text-sm active:bg-gray-700 mt-5"
+            className={`bg-black text-white px-8 py-3 text-sm active:bg-gray-700 mt-5 ${
+              isAddToCartDisabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={isAddToCartDisabled}
           >
             PRIDAŤ DO KOŠÍKA
           </button>

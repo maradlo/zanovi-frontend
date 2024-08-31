@@ -15,7 +15,7 @@ const BestSeller = () => {
   return (
     <div className="my-10">
       <div className="text-center text-3xl py-8">
-        <Title text1={"BEST"} text2={"SELLERS"} />
+        <Title text1={"NAJPREDÁVANEJŠIE"} text2={"PRODUKTY"} />
         <p className="w-3/4 m-auto text-md sm:text-md text-gray-600">
           Objavte našu najpredávanejšiu elektroniku
         </p>
@@ -36,7 +36,11 @@ const BestSeller = () => {
             id={item._id}
             name={item.name}
             image={item.image}
-            price={item.price}
+            price={
+              item.warehouse.price.used
+                ? item.warehouse.price.used
+                : item.warehouse.price.new
+            }
           />
         ))}
       </div>

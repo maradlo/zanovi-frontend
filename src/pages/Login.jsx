@@ -88,7 +88,12 @@ const Login = () => {
         required
       />
       <div className="w-full flex justify-between text-sm mt-[-8px]">
-        <p className=" cursor-pointer">Zabudli ste heslo?</p>
+        <p
+          onClick={() => navigate("/reset-password")}
+          className=" cursor-pointer"
+        >
+          Zabudli ste heslo?
+        </p>
         {currentState === "Prihlásenie" ? (
           <p
             onClick={() => setCurrentState("Registrácia")}

@@ -112,10 +112,12 @@ const ShopContextProvider = (props) => {
         return; // Exit the function if the user cancels the action
       }
       delete cartData[itemId][condition];
+      // If no other conditions exist for this item, remove the item entirely
       if (Object.keys(cartData[itemId]).length === 0) {
         delete cartData[itemId];
       }
     } else {
+      // Update the quantity if not deleting
       cartData[itemId][condition].quantity = quantity;
     }
 
@@ -123,11 +125,14 @@ const ShopContextProvider = (props) => {
 
     if (token) {
       try {
-        await axios.post(
+        const response = await axios.post(
           backendUrl + "/api/cart/update",
           { itemId, condition, quantity },
           { headers: { token } }
         );
+        if (!response.data.success) {
+          console.log("Failed to update cart on the server");
+        }
       } catch (error) {
         console.log(error);
         toast.error(error.message);
@@ -173,7 +178,6 @@ const ShopContextProvider = (props) => {
         {},
         { headers: { token } }
       );
-      console.log("response cart", response.data.cartData);
       if (response.data.success) {
         setCartItems(response.data.cartData);
       }
