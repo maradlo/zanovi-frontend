@@ -16,6 +16,13 @@ const Reservations = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    // Validate the persons field to ensure it's not greater than 4
+    if (name === "persons" && value > 4) {
+      toast.error("Počet ovládačov nemôže byť viac ako 4.");
+      return; // Do not update the state if the value is invalid
+    }
+
     setFormData({
       ...formData,
       [name]: value,
@@ -67,7 +74,7 @@ const Reservations = () => {
           </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block mb-2">Dátum a čas:</label>
+              <label className="block mb-2">Dátum a čas rezervácie:</label>
               <input
                 type="datetime-local"
                 name="dateTime"
@@ -75,6 +82,7 @@ const Reservations = () => {
                 onChange={handleInputChange}
                 required
                 className="px-3 py-2 border border-gray-300 w-full"
+                onClick={(e) => e.target.showPicker()} // This triggers the date picker
               />
             </div>
             <div>
@@ -89,7 +97,7 @@ const Reservations = () => {
               />
             </div>
             <div>
-              <label className="block mb-2">Počet osôb:</label>
+              <label className="block mb-2">Počet ovládačov:</label>
               <input
                 type="number"
                 name="persons"
@@ -97,6 +105,7 @@ const Reservations = () => {
                 onChange={handleInputChange}
                 required
                 min="1"
+                max="4"
                 className="px-3 py-2 border border-gray-300 w-full"
               />
             </div>
@@ -119,7 +128,7 @@ const Reservations = () => {
               </select>
             </div>
             <div>
-              <label className="block mb-2">Špeciálne ožiadavky:</label>
+              <label className="block mb-2">Špeciálne požiadavky:</label>
               <textarea
                 name="notes"
                 value={formData.notes}
@@ -127,6 +136,10 @@ const Reservations = () => {
                 className="px-3 py-2 border border-gray-300 w-full"
               />
             </div>
+            <p>
+              Cena rezervácie na hodinu pre jeden ovládač je 5€, pre 2 ovládače
+              7€
+            </p>
             <button
               type="submit"
               className="py-2 px-4 bg-blue-500 text-white rounded-md"

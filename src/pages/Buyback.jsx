@@ -8,169 +8,128 @@ const Buyback = () => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [products, setProducts] = useState([]); // Initialize products state
-  const [conditionOptions, setConditionOptions] = useState([
-    { value: "new", label: "Nové" },
-    { value: "used", label: "Použité" },
-  ]);
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
-    productClass: "",
-    condition: "used",
     estimatedPrice: 0,
+    productClass: "S+",
   });
+  const [addedProducts, setAddedProducts] = useState([]);
 
   const classOptions = [
-    { value: "A", label: "Trieda A (brand new)", percentage: 0.6 },
-    { value: "B", label: "Trieda B (used without issues)", percentage: 0.5 },
-    { value: "C", label: "Trieda C (scratches etc.)", percentage: 0.35 },
+    { label: "S+", multiplier: 0.6 },
+    { label: "A", multiplier: 0.5 },
+    { label: "B", multiplier: 0.4 },
+    { label: "C", multiplier: 0.3 },
+    { label: "D", multiplier: 0.2 },
   ];
 
   useEffect(() => {
-    // Fetch categories on component mount
-    const fetchCategories = async () => {
+    // Fetch all products on component mount
+    const fetchProducts = async () => {
       try {
-        const response = await axios.get(`${backendUrl}/api/category/list`);
-        setCategories(response.data.categories || []); // Ensure categories is always an array
+        const response = await axios.get(`${backendUrl}/api/product/list`);
+        setProducts(response.data.products || []);
+
+        // Extract unique categories from products
+        const uniqueCategories = Array.from(
+          new Set(response.data.products.map((product) => product.category))
+        );
+        setCategories(uniqueCategories);
       } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast.error("Failed to fetch categories");
+        console.error("Chyba pri načítávaní produktov:", error);
+        toast.error("Nepodarilo sa načítať produkty");
       }
     };
 
-    fetchCategories();
+    fetchProducts();
   }, []);
 
   useEffect(() => {
-    if (selectedCategory.toLowerCase() === "mobily") {
-      setConditionOptions(classOptions); // Set condition options to class options for "Mobily"
-      setNewProduct({ ...newProduct, productClass: "", condition: "" }); // Reset class and condition
-    } else {
-      setConditionOptions([
-        { value: "new", label: "Nové" },
-        { value: "used", label: "Použité" },
-      ]);
-      setNewProduct({ ...newProduct, productClass: "", condition: "used" }); // Reset class and set default condition for non-Mobily categories
+    if (selectedCategory) {
+      // Filter products based on selected category
+      const filtered = products.filter(
+        (product) => product.category === selectedCategory
+      );
+      setFilteredProducts(filtered);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, products]);
 
-  const handleProductNameChange = async (value) => {
+  const handleProductNameChange = (value) => {
     setNewProduct({ ...newProduct, name: value });
 
-    try {
-      const response = await axios.get(
-        `${backendUrl}/api/product/search?query=${value}`
+    if (value.trim() !== "") {
+      // Filter products based on the name input
+      const filtered = products.filter(
+        (product) =>
+          product.category === selectedCategory &&
+          product.name.toLowerCase().includes(value.toLowerCase())
       );
-      setFilteredProducts(response.data.products || []); // Ensure filteredProducts is always an array
-    } catch (error) {
-      if (value.length === 0) {
-        return;
-      }
-      console.error("Error fetching product suggestions:", error);
-      toast.error("Failed to fetch product suggestions");
-    }
-  };
-
-  const handleProductSelect = async (value) => {
-    const selectedProduct = filteredProducts.find(
-      (product) => product.name === value
-    );
-    if (
-      selectedProduct &&
-      selectedProduct.warehouse &&
-      selectedProduct.warehouse.price
-    ) {
-      let estimatedPrice = 0;
-
-      if (selectedCategory.toLowerCase() === "mobily") {
-        const classPercentage =
-          classOptions.find((cls) => cls.value === newProduct.productClass)
-            ?.percentage || 0.6; // Default to 60% if class not found
-        estimatedPrice = selectedProduct.warehouse.price.new * classPercentage;
-      } else {
-        if (newProduct.condition === "new") {
-          estimatedPrice = selectedProduct.warehouse.price.new * 0.8; // 80% of the new price
-        } else {
-          estimatedPrice = selectedProduct.warehouse.price.used * 0.6; // 60% of the used price
-        }
-      }
-
-      setNewProduct({
-        ...newProduct,
-        name: selectedProduct.name,
-        estimatedPrice: estimatedPrice.toFixed(2), // Round to 2 decimal places
-      });
+      setFilteredProducts(filtered);
     } else {
-      setNewProduct({ ...newProduct, name: value, estimatedPrice: 0 });
+      // Show all products if input is empty
+      const filtered = products.filter(
+        (product) => product.category === selectedCategory
+      );
+      setFilteredProducts(filtered);
     }
   };
 
-  const handleConditionChange = (e) => {
-    const conditionValue = e.target.value;
-    setNewProduct({ ...newProduct, condition: conditionValue });
-    handleProductSelect(newProduct.name); // Recalculate price when condition changes
+  const handleProductSelect = (product) => {
+    const classMultiplier =
+      classOptions.find((cls) => cls.label.startsWith(newProduct.productClass))
+        ?.multiplier || 0.6;
+
+    const priceToUse =
+      product.warehouse.price.used > 0
+        ? product.warehouse.price.used
+        : product.warehouse.price.new;
+    const estimatedPrice = priceToUse * classMultiplier;
+
+    setNewProduct({
+      ...newProduct,
+      name: product.name,
+      estimatedPrice: estimatedPrice.toFixed(2),
+    });
   };
 
   const handleClassChange = (e) => {
-    const classValue = e.target.value;
-    setNewProduct({ ...newProduct, productClass: classValue });
-    handleProductSelect(newProduct.name); // Recalculate price when class changes
+    setNewProduct({ ...newProduct, productClass: e.target.value });
   };
 
   const addProduct = () => {
     if (newProduct.name && newProduct.category) {
-      setProducts([...products, newProduct]);
+      setAddedProducts([...addedProducts, newProduct]);
       setNewProduct({
         name: "",
-        category: "",
-        productClass: "",
-        condition: "used",
+        category: selectedCategory,
         estimatedPrice: 0,
+        productClass: "S+",
       });
-      setFilteredProducts([]);
+      toast.success("Produkt bol pridaný do výkupu");
     } else {
-      toast.error("Please fill in all required fields");
+      toast.error("Prosím vyplňte všetky polia výkupu");
     }
   };
 
   const removeProduct = (index) => {
-    const updatedProducts = products.filter((_, i) => i !== index);
-    setProducts(updatedProducts);
+    const updatedProducts = addedProducts.filter((_, i) => i !== index);
+    setAddedProducts(updatedProducts);
   };
 
-  const calculateFinalPrice = () => {
-    return products.reduce(
-      (total, product) => total + parseFloat(product.estimatedPrice),
-      0
-    );
-  };
-
-  const handleBuybackSubmit = async () => {
-    try {
-      const response = await axios.post(`${backendUrl}/api/buyback`, {
-        products,
-      });
-      if (response.data.success) {
-        toast.success(
-          "Your buyback request has been submitted. The price may vary based on technician inspection."
-        );
-        setProducts([]); // Clear the products list after submission
-      } else {
-        toast.error("Failed to submit buyback request.");
-      }
-    } catch (error) {
-      console.error("Error submitting buyback:", error);
-      toast.error("Error submitting buyback request.");
-    }
+  const calculateTotalPrice = () => {
+    return addedProducts
+      .reduce((total, product) => total + parseFloat(product.estimatedPrice), 0)
+      .toFixed(2);
   };
 
   return (
     <div className="buyback">
       <div className="text-2xl text-center pt-8 border-t">
-        <Title text1={"Odkúpenie"} text2={"Techniky"} />
+        <Title text1={"Výkup"} text2={"Elektroniky a Hier"} />
       </div>
 
       <div className="my-10 flex flex-col md:flex-row gap-16">
@@ -186,130 +145,160 @@ const Buyback = () => {
               className="border px-4 py-2"
             >
               <option value="">Vyberte kategóriu</option>
-              {categories.map((category) => (
-                <option key={category._id} value={category.name}>
-                  {category.name}
+              {categories.map((category, index) => (
+                <option key={index} value={category}>
+                  {category}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Display additional inputs and product list only after category is selected */}
+          {selectedCategory && (
+            <>
+              <div className="flex flex-col gap-2">
+                <label>Názov produktu</label>
+                <input
+                  type="text"
+                  value={newProduct.name}
+                  onChange={(e) => handleProductNameChange(e.target.value)}
+                  className="border px-4 py-2"
+                />
+              </div>
+
+              {/* Class selection for Mobily */}
+              {selectedCategory.toLowerCase() === "mobily" && (
+                <div className="flex flex-col gap-2">
+                  <label>Trieda</label>
+                  <select
+                    value={newProduct.productClass}
+                    onChange={handleClassChange}
+                    className="border px-4 py-2"
+                  >
+                    {classOptions.map((cls) => (
+                      <option key={cls.label} value={cls.label}>
+                        {cls.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product._id}
+                    className="border p-4 cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleProductSelect(product)}
+                  >
+                    {product.image.length > 0 ? (
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-32 object-cover mb-2"
+                      />
+                    ) : (
+                      <div className="w-full h-32 flex items-center justify-center bg-gray-200 mb-2">
+                        Žiadna fotka
+                      </div>
+                    )}
+                    <p>{product.name}</p>
+                    <p className="text-sm text-gray-500">
+                      Odhadovaná cena:{" "}
+                      {(
+                        (product.warehouse.price.used > 0
+                          ? product.warehouse.price.used
+                          : product.warehouse.price.new) *
+                        (classOptions.find((cls) =>
+                          cls.label.startsWith(newProduct.productClass)
+                        )?.multiplier || 0.6)
+                      ).toFixed(2)}{" "}
+                      €
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4">
+                <button
+                  onClick={addProduct}
+                  className="py-2 px-4 bg-blue-500 text-white rounded-md"
+                >
+                  Pridať produkt do výkupu
+                </button>
+              </div>
+
+              {/* Display added products below the button */}
+              <div className="mt-4">
+                {addedProducts.length > 0 && (
+                  <>
+                    <ul className="list-disc ml-5">
+                      {addedProducts.map((product, index) => (
+                        <li
+                          key={index}
+                          className="flex justify-between items-center"
+                        >
+                          <span>
+                            {product.name} - {product.estimatedPrice} €
+                          </span>
+                          <button
+                            onClick={() => removeProduct(index)}
+                            className="ml-2 text-red-500"
+                          >
+                            Odstrániť
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {/* Display total price */}
+                    <div className="mt-4 font-bold">
+                      Celková cena: {calculateTotalPrice()} €
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Explanation text for classes */}
           {selectedCategory.toLowerCase() === "mobily" && (
-            <div className="flex flex-col gap-2">
-              <label>Třída</label>
-              <select
-                value={newProduct.productClass}
-                onChange={handleClassChange} // Handle class change
-                className="border px-4 py-2"
-              >
-                <option value="">Vyberte třídu</option>
-                {classOptions.map((cls) => (
-                  <option key={cls.value} value={cls.value}>
-                    {cls.label}
-                  </option>
-                ))}
-              </select>
+            <div className="mt-4">
+              <p className="text-sm text-gray-600">Triedy pre Mobily:</p>
+              <ul className="list-disc ml-5 text-sm text-gray-600">
+                <li>
+                  <b>S+</b>: Čisto nový, nepoužitý produkt v originál balení s
+                  fóliou.
+                </li>
+                <li>
+                  <b>A</b>: Produkt bez akýchkoľvek známok používania, v 100%
+                  stave, plne funkčný.
+                </li>
+                <li>
+                  <b>B</b>: Používaný produkt bez akýchkoľvek známok používania,
+                  plne funkčný.
+                </li>
+                <li>
+                  <b>C</b>: Produkt s viditeľnými známkami používania, no plne
+                  funkčný.
+                </li>
+                <li>
+                  <b>D</b>: Produkt mechanicky poškodený alebo nefunkčný.
+                </li>
+              </ul>
             </div>
           )}
-
-          <div className="flex flex-col gap-2">
-            <label>Názov produktu</label>
-            <input
-              type="text"
-              value={newProduct.name}
-              onChange={(e) => handleProductNameChange(e.target.value)}
-              onBlur={(e) => handleProductSelect(e.target.value)} // Fetch price on product selection
-              className="border px-4 py-2"
-              list="productSuggestions"
-            />
-            <datalist id="productSuggestions">
-              {filteredProducts
-                .filter((product) =>
-                  selectedCategory === "Mobily"
-                    ? product.category === "Mobily"
-                    : product.category !== "Mobily"
-                )
-                .map((product) => (
-                  <option key={product._id} value={product.name}>
-                    {product.name}
-                  </option>
-                ))}
-            </datalist>
-          </div>
-
-          {selectedCategory}
-          {selectedCategory !== "Mobily" && (
-            <div className="flex flex-col gap-2">
-              <label>Stav</label>
-              <select
-                value={newProduct.condition}
-                onChange={handleConditionChange} // Handle condition change
-                className="border px-4 py-2"
-              >
-                {conditionOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <label>Odhadovaná cena (€)</label>
-            <input
-              type="number"
-              value={newProduct.estimatedPrice}
-              onChange={(e) =>
-                setNewProduct({
-                  ...newProduct,
-                  estimatedPrice: parseFloat(e.target.value),
-                })
-              }
-              className="border px-4 py-2"
-            />
-          </div>
-          <button
-            onClick={addProduct}
-            className="py-2 px-4 bg-blue-500 text-white rounded-md"
-          >
-            Pridať produkt
-          </button>
         </div>
+
         <div className="md:w-1/4">
           <img className="w-full" src={assets.zanovi_buyback} alt="Buyback" />
         </div>
       </div>
 
-      <div className="my-10">
-        <Title text1={"Vaša"} text2={"Ponuka"} />
-        {products.length === 0 ? (
-          <p>Nemáte pridané žiadne produkty.</p>
-        ) : (
-          <ul className="list-disc ml-5">
-            {products.map((product, index) => (
-              <li key={index}>
-                {product.name} - {product.category}{" "}
-                {product.productClass && `(${product.productClass})`} -{" "}
-                {product.condition === "new" ? "Nové" : "Použité"} -{" "}
-                {product.estimatedPrice}€
-                <button
-                  onClick={() => removeProduct(index)}
-                  className="ml-2 text-red-500"
-                >
-                  Odstrániť
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mt-4 font-bold">
-          Celková odhadovaná cena: {calculateFinalPrice()}€
-        </p>
-        <p className="mt-2 text-gray-600">
-          Táto cena je len orientačná a môže sa líšiť na základe kontroly
-          technikom. Ak máte záujem o odkúpenie, navštívte našu predajňu.
-          Odkúpenie cez kuriéra bude dostupné čoskoro.
+      {/* Informative text */}
+      <div className="text-sm text-gray-600 mt-10">
+        <p>
+          Tento odhad ceny je iba informatívny. Finálna cena bude stanovená
+          technikom v našej predajni.
         </p>
       </div>
     </div>

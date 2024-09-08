@@ -54,6 +54,11 @@ const Product = () => {
 
   const isAddToCartDisabled = !isUsedAvailable && !isNewAvailable;
 
+  const getYoutubeEmbedUrl = (url) => {
+    const videoId = url.split("v=")[1]?.split("&")[0];
+    return `https://www.youtube.com/embed/${videoId}`;
+  };
+
   return productData && selectedCondition ? (
     <div className="border-t-2 pt-10 transition-opacity ease-in duration-500 opacity-100">
       <div className="flex gap-12 sm:gap-12 flex-col sm:flex-row">
@@ -147,6 +152,22 @@ const Product = () => {
           </div>
         </div>
       </div>
+
+      {productData.youtubeLink && (
+        <div className="mt-10">
+          <h3 className="text-xl font-bold mb-2">YouTube Trailer</h3>
+          <iframe
+            width="560"
+            height="315"
+            src={getYoutubeEmbedUrl(productData.youtubeLink)}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+        </div>
+      )}
+
       <div className="mt-20">
         <div className="flex">
           <b className="border px-5 py-3 text-sm">Popis produktu</b>

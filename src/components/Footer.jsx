@@ -6,7 +6,7 @@ const Footer = () => {
     <div>
       <div className="flex flex-col sm:grid grid-cols-[3fr_1fr_1fr] gap-14 my-10 mt-40 text-sm">
         <div>
-          <img src={assets.logo} className="mb-5 w-32" alt="" />
+          <img src={assets.logo} className="mb-5 w-32" alt="Zanovi Logo" />
           <p className="w-full md:w-2/3 text-gray-600">
             Zanovi, tu nájdete najnovšie produkty v oblasti elektroniky.
             Ponúkame špičkové značky, najmodernejšie miniaplikácie a
@@ -18,18 +18,51 @@ const Footer = () => {
         <div>
           <p className="text-xl font-medium mb-5">SPOLOČNOSŤ</p>
           <ul className="flex flex-col gap-1 text-gray-600">
-            <li>Domov</li>
-            <li>O nás</li>
-            <li>Doručenie</li>
-            <li>Zásady ochrany osobných údajov</li>
+            <li>
+              <a href="/" className="hover:underline cursor-pointer">
+                Domov
+              </a>
+            </li>
+            <li>
+              <a href="/about" className="hover:underline cursor-pointer">
+                O nás
+              </a>
+            </li>
+            <li>
+              <a href="/delivery" className="hover:underline cursor-pointer">
+                Doručenie
+              </a>
+            </li>
+            <li>
+              <a
+                href="/privacy-policy"
+                className="hover:underline cursor-pointer"
+              >
+                Zásady ochrany osobných údajov
+              </a>
+            </li>
           </ul>
         </div>
 
         <div>
           <p className="text-xl font-medium mb-5">SPOJTE SA S NAMI</p>
           <ul className="flex flex-col gap-1 text-gray-600">
-            <li>+421 902 226 357</li>
-            <li>zanovi@zanovi.sk</li>
+            <li>
+              <a
+                href="tel:+421902226357"
+                className="hover:underline cursor-pointer"
+              >
+                +421 902 226 357
+              </a>
+            </li>
+            <li>
+              <a
+                href="mailto:zanovi@zanovi.sk"
+                className="hover:underline cursor-pointer"
+              >
+                zanovi@zanovi.sk
+              </a>
+            </li>
           </ul>
         </div>
       </div>

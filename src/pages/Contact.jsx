@@ -19,10 +19,19 @@ const Contact = () => {
         <div className="flex flex-col justify-center items-start gap-6">
           <p className="font-semibold text-xl text-gray-600">ZANOVI</p>
           <p className=" text-gray-500">
-            Nitra <br /> Promenáda, SK
+            Nitra, <br /> Promenáda, SK
           </p>
-          <p className=" text-gray-500">
-            Tel: +421 902 226 357 <br /> Email: zanovi@zanovi.sk
+          <p
+            onClick={() => (window.location = "tel:+421902226357")}
+            className="text-gray-500 cursor-pointer"
+          >
+            Tel: +421 902 226 357
+          </p>
+          <p
+            onClick={() => (window.location = "mailto:zanovi@zanovi.sk")}
+            className="text-gray-500 cursor-pointer"
+          >
+            Email: zanovi@zanovi.sk
           </p>
           {/* <p className="font-semibold text-xl text-gray-600">
             Kariéra v Zanovi
@@ -37,7 +46,7 @@ const Contact = () => {
         </div>
       </div>
 
-      <NewsletterBox />
+      {/* <NewsletterBox /> */}
     </div>
   );
 };
