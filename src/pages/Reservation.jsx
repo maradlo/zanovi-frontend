@@ -12,6 +12,7 @@ const Reservations = () => {
     persons: 1,
     console: "",
     notes: "",
+    email: "",
   });
 
   const handleInputChange = (e) => {
@@ -32,6 +33,7 @@ const Reservations = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log(formData);
       const response = await axios.post(
         `${backendUrl}/api/reservations/add`,
         formData
@@ -44,6 +46,7 @@ const Reservations = () => {
           persons: 1,
           console: "",
           notes: "",
+          email: "",
         });
       } else {
         toast.error("Nepodarilo sa odoslať rezerváciu.");
@@ -73,6 +76,19 @@ const Reservations = () => {
             všetko ostatné.
           </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block mb-2">
+                Email (pre potvrdenie rezervácie):
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                className="px-3 py-2 border border-gray-300 w-full"
+              />
+            </div>
             <div>
               <label className="block mb-2">Dátum a čas rezervácie:</label>
               <input
