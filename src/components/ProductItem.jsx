@@ -8,17 +8,11 @@ const ProductItem = ({ id, name, price, image, condition }) => {
   return (
     <Link
       onClick={() => scrollTo(0, 0)}
-      className="text-gray-700 cursor-pointer"
+      className="block text-gray-700 cursor-pointer transform transition duration-300 ease-in-out hover:scale-105"
       to={`/product/${id}`}
     >
       <div className="overflow-hidden">
-        {image && image.length > 0 && (
-          <img
-            className="hover:scale-110 transition ease-in-out"
-            src={image[0]}
-            alt={name}
-          />
-        )}
+        {image && image.length > 0 && <img src={image[0]} alt={name} />}
       </div>
       <div className="text-center">
         <p className="text-lg font-medium">{name}</p>
