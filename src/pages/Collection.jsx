@@ -10,24 +10,31 @@ const Collection = () => {
   const [filterProducts, setFilterProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
+  const [subSubCategories, setSubSubCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [selectedSubSubCategories, setSelectedSubSubCategories] = useState([]);
   const [sortType, setSortType] = useState("relevant");
 
-  // Extract categories and subcategories from products
+  // Extract categories, subcategories, and subsubcategories from products
   const extractCategories = () => {
     const categorySet = new Set();
     const subCategorySet = new Set();
+    const subSubCategorySet = new Set();
 
     products.forEach((product) => {
       categorySet.add(product.category);
       if (product.subCategory) {
         subCategorySet.add(product.subCategory);
       }
+      if (product.subSubCategory) {
+        subSubCategorySet.add(product.subSubCategory);
+      }
     });
 
     setCategories(Array.from(categorySet));
     setSubCategories(Array.from(subCategorySet));
+    setSubSubCategories(Array.from(subSubCategorySet));
   };
 
   const toggleCategory = (e) => {
@@ -50,6 +57,16 @@ const Collection = () => {
     }
   };
 
+  const toggleSubSubCategory = (e) => {
+    if (selectedSubSubCategories.includes(e.target.value)) {
+      setSelectedSubSubCategories((prev) =>
+        prev.filter((item) => item !== e.target.value)
+      );
+    } else {
+      setSelectedSubSubCategories((prev) => [...prev, e.target.value]);
+    }
+  };
+
   const applyFilter = () => {
     let productsCopy = products.map((product) => {
       const { warehouse, ...restProduct } = product;
@@ -58,7 +75,6 @@ const Collection = () => {
       let condition = "";
 
       if (warehouse) {
-        // Prioritize used price if available, otherwise take the new price
         if (warehouse.price.used > 0) {
           price = warehouse.price.used;
           condition = "used";
@@ -93,6 +109,12 @@ const Collection = () => {
       );
     }
 
+    if (selectedSubSubCategories.length > 0) {
+      productsCopy = productsCopy.filter((item) =>
+        selectedSubSubCategories.includes(item.subSubCategory)
+      );
+    }
+
     setFilterProducts(productsCopy);
   };
 
@@ -120,7 +142,14 @@ const Collection = () => {
 
   useEffect(() => {
     applyFilter();
-  }, [selectedCategories, selectedSubCategories, search, showSearch, products]);
+  }, [
+    selectedCategories,
+    selectedSubCategories,
+    selectedSubSubCategories,
+    search,
+    showSearch,
+    products,
+  ]);
 
   useEffect(() => {
     sortProduct();
@@ -183,6 +212,27 @@ const Collection = () => {
             ))}
           </div>
         </div>
+        {/* SubSubCategory Filter */}
+        <div
+          className={`border border-gray-300 pl-5 py-3 my-5 ${
+            showFilter ? "" : "hidden"
+          } sm:block`}
+        >
+          <p className="mb-3 text-sm font-medium">PODPODKATEGÓRIE</p>
+          <div className="flex flex-col gap-2 text-sm font-light text-gray-700">
+            {subSubCategories.map((subSubCategory, index) => (
+              <p className="flex gap-2" key={index}>
+                <input
+                  className="w-3"
+                  type="checkbox"
+                  value={subSubCategory}
+                  onChange={toggleSubSubCategory}
+                />{" "}
+                {subSubCategory}
+              </p>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Right Side */}
@@ -205,7 +255,7 @@ const Collection = () => {
         </div>
 
         {/* Map Products */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 gap-y-4">
           {filterProducts.map((item, index) => (
             <ProductItem
               key={index}
@@ -213,7 +263,7 @@ const Collection = () => {
               id={item._id}
               price={item.price}
               image={item.image}
-              condition={item.condition} // Pass the condition as well
+              condition={item.condition}
             />
           ))}
         </div>

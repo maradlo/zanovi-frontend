@@ -59,15 +59,17 @@ const Cart = () => {
             className="py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_0.5fr_0.5fr] sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4"
           >
             <div className=" flex items-start gap-6">
-              {item.image ? (
-                <img
-                  className="w-16 sm:w-20"
-                  src={item.image}
-                  alt={item.name}
-                />
-              ) : (
-                <p>Fotka nie je k dispozícií</p>
-              )}
+              <div className="w-16 sm:w-20 aspect-square">
+                {item.image ? (
+                  <img
+                    className="w-full h-full object-cover"
+                    src={item.image}
+                    alt={item.name}
+                  />
+                ) : (
+                  <p>Fotka nie je k dispozícií</p>
+                )}
+              </div>
               <div>
                 <p className="text-xs sm:text-lg font-medium">{item.name}</p>
                 <div className="flex items-center gap-5 mt-2">

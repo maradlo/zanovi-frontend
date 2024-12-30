@@ -105,6 +105,11 @@ const PlaceOrder = () => {
     }
   };
 
+  const stripePublicKey =
+    process.env.NODE_ENV === "production"
+      ? process.env.STRIPE_LIVE_PUBLISHABLE_KEY
+      : process.env.STRIPE_TEST_PUBLISHABLE_KEY;
+
   return (
     <form
       onSubmit={onSubmitHandler}

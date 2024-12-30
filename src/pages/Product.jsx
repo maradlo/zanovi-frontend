@@ -66,18 +66,22 @@ const Product = () => {
           <div className="flex sm:flex-col overflow-x-auto sm:overflow-y-scroll justify-between sm:justify-normal sm:w-[18.7%] w-full">
             {productData.image &&
               productData.image.map((item, index) => (
-                <img
-                  onClick={() => setImage(item)}
-                  src={item}
+                <div
                   key={index}
-                  className="w-[24%] sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer"
-                  alt=""
-                />
+                  className="relative aspect-square w-[24%] sm:w-full sm:mb-3 flex-shrink-0"
+                >
+                  <img
+                    onClick={() => setImage(item)}
+                    src={item}
+                    className="w-full h-full object-cover cursor-pointer"
+                    alt=""
+                  />
+                </div>
               ))}
           </div>
-          <div className="w-full sm:w-[80%]">
+          <div className="w-full sm:w-[80%] relative aspect-square">
             <img
-              className="w-full h-auto"
+              className="w-full h-full object-cover"
               src={image || assets.default_image}
               alt=""
             />
