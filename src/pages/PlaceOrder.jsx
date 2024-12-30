@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import Title from "../components/Title";
 import CartTotal from "../components/CartTotal";
 import { assets } from "../assets/assets";
@@ -30,6 +30,14 @@ const PlaceOrder = () => {
     phone: "",
   });
 
+  useEffect(() => {
+    if (!token) {
+      toast.error("Please log in to place an order");
+      navigate("/login");
+      return;
+    }
+  }, [token]);
+
   const onChangeHandler = (event) => {
     const { name, value } = event.target;
     setFormData((data) => ({ ...data, [name]: value }));
@@ -42,7 +50,10 @@ const PlaceOrder = () => {
 
       for (const productId in cartItems) {
         for (const condition in cartItems[productId]) {
-          if (cartItems[productId]["used"] || cartItems[productId]["new"]) {
+          if (
+            cartItems[productId][condition] &&
+            cartItems[productId][condition].quantity > 0
+          ) {
             const product = products.find(
               (product) => product._id === productId
             );
@@ -53,12 +64,18 @@ const PlaceOrder = () => {
                 condition === "new"
                   ? product.warehouse.price.new
                   : product.warehouse.price.used;
-              itemInfo.quantity = cartItems[productId][condition];
+              itemInfo.quantity = cartItems[productId][condition].quantity;
+              if (!itemInfo.image || itemInfo.image.length === 0) {
+                delete itemInfo.image;
+              }
               orderItems.push(itemInfo);
             }
           }
         }
       }
+
+      console.log("Cart Items:", cartItems);
+      console.log("Order Items:", orderItems);
 
       const orderData = {
         address: formData,
@@ -83,17 +100,31 @@ const PlaceOrder = () => {
           break;
 
         case "stripe":
-          const responseStripe = await axios.post(
-            `${backendUrl}/api/order/stripe`,
-            orderData,
-            { headers: { token } }
-          );
-          if (responseStripe.data.success) {
-            const { session_url } = responseStripe.data;
-            window.location.replace(session_url);
-            toast.success(responseStripe.data.message);
-          } else {
-            toast.error(responseStripe.data.message);
+          try {
+            const responseStripe = await axios.post(
+              `${backendUrl}/api/order/stripe`,
+              orderData,
+              {
+                headers: {
+                  token,
+                  "Content-Type": "application/json",
+                  origin: window.location.origin,
+                },
+              }
+            );
+            console.log("Stripe Response:", responseStripe.data);
+            if (responseStripe.data.success) {
+              const { session_url } = responseStripe.data;
+              window.location.replace(session_url);
+              toast.success(responseStripe.data.message);
+            } else {
+              toast.error(
+                responseStripe.data.message || "Payment processing failed"
+              );
+            }
+          } catch (error) {
+            console.error("Stripe Error:", error.response?.data || error);
+            toast.error(error.response?.data?.message || error.message);
           }
           break;
 
@@ -105,10 +136,7 @@ const PlaceOrder = () => {
     }
   };
 
-  const stripePublicKey =
-    process.env.NODE_ENV === "production"
-      ? process.env.STRIPE_LIVE_PUBLISHABLE_KEY
-      : process.env.STRIPE_TEST_PUBLISHABLE_KEY;
+  const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
   return (
     <form
