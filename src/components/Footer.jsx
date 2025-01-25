@@ -6,7 +6,7 @@ const Footer = () => {
     <div>
       <div className="flex flex-col sm:grid grid-cols-[3fr_1fr_1fr] gap-14 my-10 mt-40 text-sm">
         <div>
-          <img src={assets.logo} className="mb-5 w-32" alt="Zanovi Logo" />
+          <img src={assets.logo_new} className="mb-5 w-32" alt="Zanovi Logo" />
           <p className="w-full md:w-2/3 text-gray-600">
             Zanovi, tu nájdete najnovšie produkty v oblasti elektroniky.
             Ponúkame špičkové značky, najmodernejšie miniaplikácie a

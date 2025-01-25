@@ -1,25 +1,63 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 
 const Profile = () => {
   const { token, backendUrl } = useContext(ShopContext);
-  const [email, setEmail] = useState("");
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [address, setAddress] = useState({
-    name: "",
-    lastName: "",
-    street: "",
-    city: "",
-    country: "",
-    phone: "",
-    zip: "",
+  const [address, setAddress] = useState(() => {
+    // Initialize from localStorage if available
+    const savedAddress = localStorage.getItem("userAddress");
+    return savedAddress
+      ? JSON.parse(savedAddress)
+      : {
+          name: "",
+          lastName: "",
+          street: "",
+          city: "",
+          country: "",
+          phone: "",
+          zip: "",
+        };
   });
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get(`${backendUrl}/api/user/address`, {
+          headers: { token },
+        });
+
+        if (response.data.success) {
+          if (response.data.address) {
+            setAddress(response.data.address);
+            // Save to localStorage
+            localStorage.setItem(
+              "userAddress",
+              JSON.stringify(response.data.address)
+            );
+          }
+          if (response.data.email) {
+            setCurrentEmail(response.data.email);
+            localStorage.setItem("userEmail", response.data.email);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
+    };
+
+    if (token) {
+      fetchUserData();
+    }
+  }, [token, backendUrl]);
+
   const handleEmailChange = async () => {
-    if (!email) {
+    if (!newEmail) {
       toast.error("Please enter a valid email.");
       return;
     }
@@ -27,13 +65,15 @@ const Profile = () => {
     try {
       const response = await axios.post(
         `${backendUrl}/api/user/update-email`,
-        { email },
+        { email: newEmail },
         { headers: { token } }
       );
 
       if (response.data.success) {
         toast.success("Email updated successfully.");
-        setEmail(""); // Reset the email input field
+        setCurrentEmail(newEmail);
+        localStorage.setItem("userEmail", newEmail);
+        setNewEmail(""); // Reset the email input field
       } else {
         toast.error(response.data.message);
       }
@@ -86,15 +126,14 @@ const Profile = () => {
 
       if (response.data.success) {
         toast.success("Address updated successfully.");
-        setAddress({
-          name: "",
-          lastName: "",
-          street: "",
-          city: "",
-          country: "",
-          phone: "",
-          zip: "",
-        }); // Reset the address input fields
+        if (response.data.address) {
+          setAddress(response.data.address);
+          // Save to localStorage
+          localStorage.setItem(
+            "userAddress",
+            JSON.stringify(response.data.address)
+          );
+        }
       } else {
         toast.error(response.data.message);
       }
@@ -110,13 +149,25 @@ const Profile = () => {
 
       <div className="mb-6">
         <label className="block mb-2 text-sm font-medium text-gray-700">
+          Aktuálny email
+        </label>
+        <input
+          type="email"
+          className="border px-4 py-2 w-full bg-gray-100"
+          value={currentEmail}
+          disabled
+        />
+      </div>
+
+      <div className="mb-6">
+        <label className="block mb-2 text-sm font-medium text-gray-700">
           Nový email
         </label>
         <input
           type="email"
           className="border px-4 py-2 w-full"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={newEmail}
+          onChange={(e) => setNewEmail(e.target.value)}
         />
         <button
           onClick={handleEmailChange}

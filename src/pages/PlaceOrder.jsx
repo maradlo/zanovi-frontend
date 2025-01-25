@@ -24,7 +24,6 @@ const PlaceOrder = () => {
     email: "",
     street: "",
     city: "",
-    state: "",
     zipcode: "",
     country: "",
     phone: "",
@@ -36,6 +35,15 @@ const PlaceOrder = () => {
       navigate("/login");
       return;
     }
+
+    // Add this to initialize form with saved email
+    const savedEmail = localStorage.getItem("userEmail");
+    if (savedEmail) {
+      setFormData((prev) => ({
+        ...prev,
+        email: savedEmail,
+      }));
+    }
   }, [token]);
 
   const onChangeHandler = (event) => {
@@ -45,98 +53,142 @@ const PlaceOrder = () => {
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
-    try {
-      let orderItems = [];
 
-      for (const productId in cartItems) {
-        for (const condition in cartItems[productId]) {
-          if (
-            cartItems[productId][condition] &&
-            cartItems[productId][condition].quantity > 0
-          ) {
-            const product = products.find(
-              (product) => product._id === productId
-            );
-            if (product) {
-              const itemInfo = structuredClone(product);
-              itemInfo.condition = condition;
-              itemInfo.price =
-                condition === "new"
-                  ? product.warehouse.price.new
-                  : product.warehouse.price.used;
-              itemInfo.quantity = cartItems[productId][condition].quantity;
-              if (!itemInfo.image || itemInfo.image.length === 0) {
-                delete itemInfo.image;
-              }
-              orderItems.push(itemInfo);
-            }
+    // Validate cart items
+    if (Object.keys(cartItems).length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    try {
+      // Create order items array from cart items
+      const orderItems = [];
+      for (const [productId, conditions] of Object.entries(cartItems)) {
+        const product = products.find((p) => p._id === productId);
+        if (product) {
+          for (const [condition, details] of Object.entries(conditions)) {
+            orderItems.push({
+              _id: productId,
+              name: product.name,
+              condition: condition,
+              price: details.price,
+              quantity: details.quantity,
+              image: product.image,
+            });
           }
         }
       }
 
-      console.log("Cart Items:", cartItems);
-      console.log("Order Items:", orderItems);
+      // Calculate total amount including delivery fee
+      const totalAmount = getCartAmount() + delivery_fee;
 
+      // Create order data
       const orderData = {
-        address: formData,
+        userId: token,
         items: orderItems,
-        amount: getCartAmount() + delivery_fee,
+        amount: totalAmount,
+        address: formData,
+        paymentMethod: method,
       };
 
-      switch (method) {
-        case "cod":
-          const response = await axios.post(
-            `${backendUrl}/api/order/place`,
-            orderData,
-            { headers: { token } }
-          );
-          if (response.data.success) {
-            setCartItems({});
-            navigate("/orders");
-            toast.success(response.data.message);
-          } else {
-            toast.error(response.data.message);
-          }
-          break;
+      if (method === "cod") {
+        // Handle COD payment
+        const response = await axios.post(
+          `${backendUrl}/api/order/place`,
+          orderData,
+          { headers: { token } }
+        );
 
-        case "stripe":
-          try {
-            const responseStripe = await axios.post(
-              `${backendUrl}/api/order/stripe`,
-              orderData,
-              {
-                headers: {
-                  token,
-                  "Content-Type": "application/json",
-                  origin: window.location.origin,
-                },
-              }
-            );
-            console.log("Stripe Response:", responseStripe.data);
-            if (responseStripe.data.success) {
-              const { session_url } = responseStripe.data;
-              window.location.replace(session_url);
-              toast.success(responseStripe.data.message);
-            } else {
-              toast.error(
-                responseStripe.data.message || "Payment processing failed"
-              );
-            }
-          } catch (error) {
-            console.error("Stripe Error:", error.response?.data || error);
-            toast.error(error.response?.data?.message || error.message);
-          }
-          break;
+        if (response.data.success) {
+          setCartItems({});
+          localStorage.removeItem("cartItems");
+          toast.success("Order placed successfully");
+          navigate("/orders");
+        } else {
+          toast.error(response.data.message);
+        }
+      } else if (method === "stripe") {
+        // Create order first
+        const orderResponse = await axios.post(
+          `${backendUrl}/api/order/place`,
+          { ...orderData, paymentMethod: "Stripe" },
+          { headers: { token } }
+        );
 
-        default:
-          break;
+        if (orderResponse.data.success) {
+          // Then initialize Stripe payment with the order ID
+          await handleStripePayment(orderResponse.data.orderId);
+        } else {
+          toast.error(orderResponse.data.message);
+        }
       }
     } catch (error) {
-      toast.error(error.message);
+      console.error("Error placing order:", error);
+      toast.error("Failed to place order");
     }
   };
 
   const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+  const stripeSecretKey =
+    import.meta.env.VITE_NODE_ENV === "production"
+      ? import.meta.env.VITE_STRIPE_LIVE_SECRET_KEY
+      : import.meta.env.VITE_STRIPE_TEST_SECRET_KEY;
+
+  // Add function to fetch and use saved address
+  const useSavedAddress = async () => {
+    try {
+      const response = await axios.get(`${backendUrl}/api/user/address`, {
+        headers: { token },
+      });
+
+      if (response.data.success && response.data.address) {
+        const savedAddress = response.data.address;
+        setFormData({
+          ...formData,
+          firstName: savedAddress.name,
+          lastName: savedAddress.lastName,
+          street: savedAddress.street,
+          city: savedAddress.city,
+          country: savedAddress.country,
+          phone: savedAddress.phone,
+          zipcode: savedAddress.zip,
+        });
+      }
+    } catch (error) {
+      toast.error("Failed to fetch saved address");
+      console.error("Failed to fetch address:", error);
+    }
+  };
+
+  const handleStripePayment = async (orderId) => {
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/order/stripe`,
+        {
+          orderId,
+          successUrl: `${window.location.origin}/payment/success`,
+          cancelUrl: `${window.location.origin}/cart`,
+        },
+        {
+          headers: {
+            token,
+            Authorization: `Bearer ${stripeSecretKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        window.location.href = response.data.url;
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to initialize Stripe payment");
+    }
+  };
 
   return (
     <form
@@ -145,6 +197,13 @@ const PlaceOrder = () => {
     >
       {/* ------------- Left Side ---------------- */}
       <div className="flex flex-col gap-4 w-full sm:max-w-[480px]">
+        <button
+          type="button"
+          onClick={useSavedAddress}
+          className="bg-gray-200 text-gray-800 px-4 py-2 rounded mb-4"
+        >
+          Použiť uloženú adresu
+        </button>
         <div className="text-xl sm:text-2xl my-3">
           <Title text1="ADRESA" text2="DUREČENIA" />
         </div>
@@ -195,14 +254,6 @@ const PlaceOrder = () => {
             className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
             type="text"
             placeholder="Mesto"
-          />
-          <input
-            onChange={onChangeHandler}
-            name="state"
-            value={formData.state}
-            className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
-            type="text"
-            placeholder="Štáť"
           />
         </div>
         <div className="flex gap-3">

@@ -1,112 +1,128 @@
 import React, { useContext, useEffect, useState } from "react";
 import { ShopContext } from "../context/ShopContext";
-import Title from "../components/Title";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const Orders = () => {
-  const { backendUrl, token, currency } = useContext(ShopContext);
-
-  const [orderData, setorderData] = useState([]);
-
-  const loadOrderData = async () => {
-    try {
-      if (!token) {
-        return null;
-      }
-
-      const response = await axios.post(
-        backendUrl + "/api/order/userorders",
-        {},
-        { headers: { token } }
-      );
-      if (response.data.success) {
-        let allOrdersItem = [];
-        response.data.orders.map((order) => {
-          order.items.map((item) => {
-            item["status"] = order.status;
-            item["payment"] = order.payment;
-            item["paymentMethod"] = order.paymentMethod;
-            item["date"] = order.date;
-            allOrdersItem.push(item);
-          });
-        });
-        setorderData(allOrdersItem.reverse());
-      }
-    } catch (error) {}
-  };
-
-  const statusTranslations = {
-    "Order Placed": "Objednávka vytvorená",
-    Packing: "Balenie objednávky",
-    Shipped: "Odoslaná",
-    "Out for delivery": "Na doručenie",
-    Delivered: "Doručená",
-  };
+  const { token, backendUrl, navigate } = useContext(ShopContext);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadOrderData();
-  }, [token]);
+    if (!token) {
+      toast.error("Please log in to view orders");
+      navigate("/login");
+      return;
+    }
 
-  console.log(orderData);
+    const fetchOrders = async () => {
+      try {
+        const response = await axios.post(
+          `${backendUrl}/api/order/userorders`,
+          {},
+          { headers: { token } }
+        );
+        console.log(response.data.orders);
+        if (response.data.success) {
+          setOrders(response.data.orders);
+        } else {
+          toast.error(response.data.message);
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Failed to fetch orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [token, backendUrl, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <p>Loading orders...</p>
+      </div>
+    );
+  }
+
+  if (!orders || orders.length === 0) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <p>No orders found</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="border-t pt-16">
-      <div className="text-2xl">
-        <Title text1={"MOJE"} text2={"OBJEDNÁVKY"} />
-      </div>
-
-      <div>
-        {orderData.map((item, index) => (
+    <div className="min-h-[80vh] py-10">
+      <h2 className="text-2xl font-bold mb-6">Vaše objednávky</h2>
+      <div className="flex flex-col gap-6">
+        {orders.map((order) => (
           <div
-            key={index}
-            className="py-4 border-t border-b text-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+            key={order._id}
+            className="border rounded-lg p-4 shadow-sm bg-white"
           >
-            <div className="flex items-start gap-6 text-sm">
-              <img className="w-16 sm:w-20" src={item.image[0]} alt="" />
+            <div className="flex justify-between items-start mb-4">
               <div>
-                <p className="sm:text-base font-medium">{item.name}</p>
-                <div className="flex items-center gap-3 mt-1 text-base text-gray-700">
-                  <p>
-                    {item.price}
-                    {currency}
-                  </p>
-                  <p>Počet: {item.quantity}</p>
-                  <p>Stav: {item.condition === "used" ? "Použitý" : "Nový"}</p>
-                </div>
-                <p className="mt-1">
-                  Dátum:{" "}
-                  <span className=" text-gray-400">
-                    {new Date(item.date).toLocaleDateString("sk-SK", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
+                <p className="font-medium">
+                  Objednávka #{order._id.slice(-6).toUpperCase()}
                 </p>
-                <p className="mt-1">
-                  Platba:{" "}
-                  <span className=" text-gray-400">
-                    {item.paymentMethod === "COD"
-                      ? "Dobierka"
-                      : item.paymentMethod}
-                  </span>
+                <p className="text-sm text-gray-500">
+                  {new Date(order.date).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">€{order.amount.toFixed(2)}</p>
+                <p
+                  className={`text-sm ${
+                    order.status === "Delivered"
+                      ? "text-green-500"
+                      : "text-orange-500"
+                  }`}
+                >
+                  {order.status}
                 </p>
               </div>
             </div>
-            <div className="md:w-1/2 flex justify-between">
-              <div className="flex items-center gap-2">
-                <p className="min-w-2 h-2 rounded-full bg-green-500"></p>
-                <p className="text-sm md:text-base">
-                  {statusTranslations[item.status] || item.status}
-                </p>
-              </div>
-              <button
-                onClick={loadOrderData}
-                className="border px-4 py-2 text-sm font-medium rounded-sm"
-              >
-                Sledovať objednávku
-              </button>
+
+            <div className="space-y-3">
+              {order.items?.map((item, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  {item.image && (
+                    <img
+                      src={item.image[0]}
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-gray-500">
+                      Condition: {item.condition}
+                    </p>
+                    <p className="text-sm">
+                      {item.quantity} x €{item.price.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-4 border-t">
+              <p className="font-medium">Shipping Address:</p>
+              <p className="text-sm text-gray-600">
+                {order.address.firstName} {order.address.lastName}
+              </p>
+              <p className="text-sm text-gray-600">{order.address.street}</p>
+              <p className="text-sm text-gray-600">
+                {order.address.city}, {order.address.country}{" "}
+                {order.address.zipcode}
+              </p>
+              <p className="text-sm text-gray-600">
+                Phone: {order.address.phone}
+              </p>
             </div>
           </div>
         ))}
